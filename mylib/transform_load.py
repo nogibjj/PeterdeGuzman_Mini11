@@ -281,55 +281,55 @@ def load_voterreg(dataset):
     return "success"
 
 
-def load_votehistory(dataset):
-    """Loads data into the databricks database"""
-    payload = csv.reader(
-        open(dataset, encoding="utf-16"),
-        delimiter="\t",
-    )
-    next(payload)
-    load_dotenv()
-    server_h = os.getenv("sql_server_host")
-    access_token = os.getenv("databricks_api_key")
-    http_path = os.getenv("sql_http")
-    with sql.connect(
-        server_hostname=server_h,
-        http_path=http_path,
-        access_token=access_token,
-    ) as conn:
-        with conn.cursor() as c:
-            # generate new table for the database
-            c.execute(
-                """
-            CREATE TABLE IF NOT EXISTS ped19_voterhist (
-                county_id INT,
-                county_desc STRING,
-                voter_reg_num STRING,
-                election_lbl STRING,
-                election_desc STRING,
-                voting_method STRING,
-                voted_party_cd STRING,
-                voted_party_desc STRING,
-                pct_label STRING,
-                pct_description STRING,
-                ncid STRING,
-                voted_county_id STRING,
-                voted_county_desc STRING,
-                vtd_label STRING,
-                vtd_description STRING)
-            """
-            )
-            # insert
-            string_sql = "INSERT into ped19_voterhist VALUES"
-            for i in payload:
-                string_sql += "\n" + str(tuple(i)) + ","
-            string_sql = string_sql[:-1] + ";"
-            # print(string_sql[:-1])
-            c.execute(string_sql)
-        c.close()
-        conn.close()
-    print("Successfully loaded data to Databricks")
-    return "success"
+# def load_votehistory(dataset):
+#     """Loads data into the databricks database"""
+#     payload = csv.reader(
+#         open(dataset, encoding="utf-16"),
+#         delimiter="\t",
+#     )
+#     next(payload)
+#     load_dotenv()
+#     server_h = os.getenv("sql_server_host")
+#     access_token = os.getenv("databricks_api_key")
+#     http_path = os.getenv("sql_http")
+#     with sql.connect(
+#         server_hostname=server_h,
+#         http_path=http_path,
+#         access_token=access_token,
+#     ) as conn:
+#         with conn.cursor() as c:
+#             # generate new table for the database
+#             c.execute(
+#                 """
+#             CREATE TABLE IF NOT EXISTS ped19_voterhist (
+#                 county_id INT,
+#                 county_desc STRING,
+#                 voter_reg_num STRING,
+#                 election_lbl STRING,
+#                 election_desc STRING,
+#                 voting_method STRING,
+#                 voted_party_cd STRING,
+#                 voted_party_desc STRING,
+#                 pct_label STRING,
+#                 pct_description STRING,
+#                 ncid STRING,
+#                 voted_county_id STRING,
+#                 voted_county_desc STRING,
+#                 vtd_label STRING,
+#                 vtd_description STRING)
+#             """
+#             )
+#             # insert
+#             string_sql = "INSERT into ped19_voterhist VALUES"
+#             for i in payload:
+#                 string_sql += "\n" + str(tuple(i)) + ","
+#             string_sql = string_sql[:-1] + ";"
+#             # print(string_sql[:-1])
+#             c.execute(string_sql)
+#         c.close()
+#         conn.close()
+#     print("Successfully loaded data to Databricks")
+#     return "success"
 
 
 # def load_pollingplaces(dataset, year):
