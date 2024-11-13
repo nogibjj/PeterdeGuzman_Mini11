@@ -1,0 +1,26 @@
+name: CICD
+
+on: 
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: install packages
+        run: make install
+      - name: format
+        run: make format
+      - name: lint
+        run: make lint
+      - name: test
+        run: make test
+        env: # Or as an environment variable
+          databricks_api_key: ${{ secrets.databricks_api_key }}
+          sql_server_host: ${{ secrets.sql_server_host }}
+          sql_http: ${{ secrets.sql_http }}
