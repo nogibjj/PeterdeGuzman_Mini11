@@ -4,40 +4,43 @@
 
 # COMMAND ----------
 
-def load_pollingplaces(dataset, year):
-    # Read the CSV file using Spark (to handle large datasets efficiently)
-    df = spark.read.option("delimiter", "\t").csv(dataset, header=True, encoding="UTF-16")
-    
-    # Clean data: remove any null bytes and handle possible bad formatting
-    df_cleaned = df.select([df[col].cast("string").alias(col) for col in df.columns])  
-    # Cast all columns to string (remove null byte issues)
-    
-    # Add a new column for 'id' as an auto-incremented field
-    # In Spark, we can use monotonically_increasing_id to simulate an auto-increment id
-    from pyspark.sql.functions import monotonically_increasing_id
-    df_cleaned = df_cleaned.withColumn("id", monotonically_increasing_id())
-    
-    # Specify the name of the Delta table
-    db_name = "pollingplaces_"
-    table_name = f"{db_name}{year}"
-    
-    # Write the DataFrame to a Delta table (if the table already exists, replace it)
-    delta_path = f"/Workspace/Shared/PeterdeGuzman_Mini11/data/{table_name}"
-    
-    # Write the dataframe to a Delta format
-    df_cleaned.write.format("delta").mode("overwrite").save(delta_path)
-    
-    # Create or replace the table in Databricks SQL environment
-    spark.sql(f"""
-        CREATE OR REPLACE TABLE {table_name}
-        USING DELTA
-        LOCATION '{delta_path}'
-    """)
-    
-    return f"Delta table '{table_name}' created successfully."
+# Create functions to transform the polling place data in the table
 
+# Define a global variable for the log file
+LOG_FILE = "query_log.md"
+
+
+def log_query(query, result="none"):
+    """adds to a query markdown file"""
+    with open(LOG_FILE, "a") as file:
+        file.write(f"```sql\n{query}\n```\n\n")
+        file.write(f"```response from databricks\n{result}\n```\n\n")
+
+
+def query(query: str, delta_table_path: str):
+  try:
+    table_name = "pollingplaces"
+    spark.sql(f"""
+            CREATE OR REPLACE TEMPORARY VIEW {table_name} USING DELTA LOCATION '{delta_table_path}'
+            """)
+    
+    log_query(query, result="Query received, executing next...")
+    print(f"Executing SQL query on Delta table at {delta_table_path}")
+    result_df = spark.sql(query)
+    result_str = result_df.show(5, truncate=False)
+    log_query(query, result=result_str)
+
+    return result_df
+  
+  except Exception as e:
+
+    error_message = f"Error occurred: {e}"
+    log_query(query, result=error_message)
+    print(error_message)
+    return None
+    
 
 # COMMAND ----------
 
-# Load polling place data to Databricks table
-load_pollingplaces(dataset= "/Workspace/Shared/PeterdeGuzman_Mini11/data/polling_place_20201103.csv", year= "2020")
+# Transform the data
+output_df = query(""" SELECT county_name, COUNT(pollingplace_id) AS pollingplace_count FROM pollingplaces2020 GROUP BY county_name ORDER by pollingplace_count DESC; """, "s3://databricks-workspace-stack-07fd4-bucket/unity-catalog/3670519680858392/__unitystorage/catalogs/9676f42b-158b-4dbf-b5d4-2768ead7ad1b/tables/9527823c-d82f-4675-bbd3-4da373f118ee")
