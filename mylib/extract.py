@@ -7,21 +7,21 @@ import os
 import zipfile
 import chardet
 import io
+import pandas as pd
+from pyspark.sql import SparkSession
 
 
-def extract(
+def extract_load(
     url,
     filepath,
-    directory,
 ):
     """Extract to file path"""
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    with requests.get(url, timeout=5) as r:
-        with open(filepath, "wb") as f:
-            f.write(r.content)
+    spark = SparkSession.builder.appName("Read CSV from URL").getORCreate()
+
+    df = pd.read_csv(url, sep="\t")
+    print(df.head())
+    pollingplaces_df = spark.createDataFrame(df)
+    pollingplaces_df.write.format("delta").mode("append").saveAsTable("ped19_pollingplaces")
+    print("Dataframe saved to table")
     return filepath
-
-
-
 

@@ -40,4 +40,4 @@ def load_pollingplaces(dataset, year):
 # COMMAND ----------
 
 # Load polling place data to Databricks table
-load_pollingplaces(dataset= "/Workspace/Shared/PeterdeGuzman_Mini11/data/pollingplaces_2020.csv", year= "2020")
+load_pollingplaces(dataset= "/Workspace/Shared/PeterdeGuzman_Mini11/data/polling_place_20201103.csv", year= "2020")
