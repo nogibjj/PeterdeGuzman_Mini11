@@ -17,30 +17,51 @@ def log_query(query, result="none"):
         file.write(f"```response from databricks\n{result}\n```\n\n")
 
 
-def query(query: str, delta_table_path: str):
-  try:
-    table_name = "pollingplaces"
-    spark.sql(f"""
-            CREATE OR REPLACE TEMPORARY VIEW {table_name} USING DELTA LOCATION '{delta_table_path}'
-            """)
+def query(query: str, delta_table_name: str, table_name: str = None):
+    try:
+        # Check if delta_table_name is provided
+        if not delta_table_name:
+            raise ValueError(f"Delta table name must be provided, provided: {delta_table_name}")
+        
+        # If no table name is provided, extract from delta_table_name
+        table_name = table_name or delta_table_name.split(".")[-1]
+        
+        # Escape the table name if it contains special characters (e.g., dashes)
+        table_name = f"`{table_name}`"  # Wrap the table name in backticks to handle special characters
+
+        # No need to specify path if you're using Unity Catalog and Delta tables are registered
+        log_query(query, result="Query received, executing next...")
+        print(f"Executing SQL query on table {delta_table_name}")
+        
+        # Execute the provided query directly on the Unity Catalog table
+        result_df = spark.sql(query)
+        
+        # Show the top 5 rows of the result for inspection
+        result_str = result_df.show(20, truncate=False)
+        
+        log_query(query, result=result_str)
+
+        return result_df
     
-    log_query(query, result="Query received, executing next...")
-    print(f"Executing SQL query on Delta table at {delta_table_path}")
-    result_df = spark.sql(query)
-    result_str = result_df.show(5, truncate=False)
-    log_query(query, result=result_str)
+    except Exception as e:
+        # Catch and log any errors during the query execution
+        error_message = f"Error occurred: {e}"
+        log_query(query, result=error_message)
+        print(error_message)
+        return None 
 
-    return result_df
-  
-  except Exception as e:
 
-    error_message = f"Error occurred: {e}"
-    log_query(query, result=error_message)
-    print(error_message)
-    return None
     
 
 # COMMAND ----------
 
-# Transform the data
-output_df = query(""" SELECT county_name, COUNT(pollingplace_id) AS pollingplace_count FROM pollingplaces2020 GROUP BY county_name ORDER by pollingplace_count DESC; """, "s3://databricks-workspace-stack-07fd4-bucket/unity-catalog/3670519680858392/__unitystorage/catalogs/9676f42b-158b-4dbf-b5d4-2768ead7ad1b/tables/9527823c-d82f-4675-bbd3-4da373f118ee")
+
+
+# Query example with Unity Catalog table reference:
+output_df = query("""
+    SELECT county_name, COUNT(polling_place_id) AS pollingplace_count 
+    FROM ids706_data_engineering.default.ped19_pollingplaces 
+    GROUP BY county_name 
+    ORDER BY pollingplace_count DESC;
+""", "ids706_data_engineering.default.ped19_pollingplaces")
+
