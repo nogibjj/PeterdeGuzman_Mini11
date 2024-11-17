@@ -26,20 +26,21 @@ def query(query: str, delta_table_name: str, table_name: str = None):
         # If no table name is provided, extract from delta_table_name
         table_name = table_name or delta_table_name.split(".")[-1]
         
-        # Escape the table name if it contains special characters (e.g., dashes)
-        table_name = f"`{table_name}`"  # Wrap the table name in backticks to handle special characters
+        
+        table_name = f"`{table_name}`"  
 
         # No need to specify path if you're using Unity Catalog and Delta tables are registered
+        # All of our IDS 706 tables are in this Unity Catalog
         log_query(query, result="Query received, executing next...")
         print(f"Executing SQL query on table {delta_table_name}")
         
-        # Execute the provided query directly on the Unity Catalog table
+        # Execute the query on the table
         result_df = spark.sql(query)
         
         pandas_df = result_df.toPandas()
         
-        # Convert the Pandas DataFrame to a Markdown table
-        result_str = pandas_df.to_markdown(index=False)  # Convert the dataframe to markdown without the index
+        # Convert the Pandas DataFrame to a Markdown table so it can be seen in our query log
+        result_str = pandas_df.to_markdown(index=False)  
         
         
         log_query(query, result=result_str)
