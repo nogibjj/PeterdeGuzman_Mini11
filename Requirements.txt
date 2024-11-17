@@ -14,3 +14,4 @@ numpy
 requests
 databricks-sql-connector
 python-dotenv
+pyspark
