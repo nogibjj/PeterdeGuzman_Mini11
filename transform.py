@@ -36,8 +36,11 @@ def query(query: str, delta_table_name: str, table_name: str = None):
         # Execute the provided query directly on the Unity Catalog table
         result_df = spark.sql(query)
         
-        # Show the top 5 rows of the result for inspection
-        result_str = result_df.show(20, truncate=False)
+        pandas_df = result_df.toPandas()
+        
+        # Convert the Pandas DataFrame to a Markdown table
+        result_str = pandas_df.to_markdown(index=False)  # Convert the dataframe to markdown without the index
+        
         
         log_query(query, result=result_str)
 
@@ -58,7 +61,7 @@ def query(query: str, delta_table_name: str, table_name: str = None):
 
 
 # Query example with Unity Catalog table reference:
-output_df = query("""
+outputdf = query("""
     SELECT county_name, COUNT(polling_place_id) AS pollingplace_count 
     FROM ids706_data_engineering.default.ped19_pollingplaces 
     GROUP BY county_name 
